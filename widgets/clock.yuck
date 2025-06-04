@@ -1,0 +1,18 @@
+(defwidget weekday [time]
+  (label :class "ampm" :text
+    {time == "Mon" ? "月"
+     : time == "Tue" ? "火"
+     : time == "Wed" ? "水"
+     : time == "Thu" ? "木"
+     : time == "Fri" ? "金"
+     : time == "Sat" ? "土"
+     : "日"}))
+
+(defwidget clock []
+  (box :class "clock-container" :orientation "h"
+       (label :class "ampm" :text {formattime(EWW_TIME, "%p") == "AM" ? "午前" : "午後"})
+       (box :class "clock"
+            :orientation "v"
+            (label :text {formattime(EWW_TIME, "%I:%M:%S")})
+            (label :text {formattime(EWW_TIME, "%y-%m-%d")}))
+       (weekday :time {formattime(EWW_TIME, "%a")})))

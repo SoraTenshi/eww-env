@@ -1,0 +1,29 @@
+* {
+  color: #c0caf5;
+  background-color: transparent;
+  font-family: "Lilex Nerd Font";
+  font-feature-settings: "cv08,zero,cv09,cv10";
+}
+
+.bar {
+  background-color: rgba(36, 40, 50, 0.4);
+}
+
+.clock {
+  font-size: 0.8rem;
+}
+
+.ampm {
+  font-family: "Ricty Diminished with Fira Code";
+  font-size: 1.5rem;
+  color: #7aa2f7;
+}
+
+.left {
+  margin-left: 4px;
+  padding: 1px;
+}
+
+.right {
+  margin-right: 4px;
+}
