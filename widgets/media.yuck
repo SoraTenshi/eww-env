@@ -1,0 +1,43 @@
+(deflisten song-title :initial "[Nothing]"
+  "playerctl -p spotify --follow metadata --format '{{ title }}'")
+
+(deflisten song-artist :initial "[Nothing]"
+  "playerctl -p spotify --follow metadata --format '{{ artist }}'")
+
+(deflisten song-progress :initial 0.0
+  "playerctl -p spotify --follow metadata --format '{{ position / mpris:length * 100 }}'")
+
+(deflisten full-song :initial "[empty]"
+  "playerctl -p spotify --follow metadata --format 'Title: {{ title }}<nl>Artist: {{ artist }}<nl>Album: {{ album }}<nl>Time: {{ duration(position) }} / {{ duration(mpris:length) }}'")
+
+;; TODO: Selector for player used:
+;;; via playerctl -l
+
+(defwidget music-progress []
+  (progress :value song-progress
+            :orientation "h"
+            :class "song-progress"))
+
+(defwidget media []
+  (button :class "media-container"
+       :orientation "h"
+       :onclick "playerctl play-pause"
+       :vexpand false
+       ;; holy what? \n doesn't work here lmao
+       :tooltip {replace(full-song, "<nl>", "
+")}
+      (box :class "media-inner"
+           :orientation "v"
+           (label :class "song"
+                  :limit-width 28
+                  :unindent true
+                  :text song-title
+                  :truncate true
+                  :wrap false)
+           (label :class "artist"
+                  :limit-width 28
+                  :unindent true
+                  :truncate true
+                  :text song-artist
+                  :wrap false)
+           (music-progress))))

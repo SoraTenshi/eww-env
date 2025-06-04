@@ -1,11 +1,12 @@
 (include "./widgets/clock.yuck")
+(include "./widgets/media.yuck")
 
 (defwidget parent []
            (centerbox :class "bar"
              (box :class "left" :halign "start" :hexpand true :space-evenly true :vexpand false
                   (clock))
              (box :class "middle" :halign "center" :hexpand true :space-evenly true :vexpand false
-                  (clock))
+                  (media))
              (box :class "right" :halign "end" :hexpand true :space-evenly true :vexpand false
                   (clock))))
 

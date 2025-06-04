@@ -27,3 +27,44 @@
 .right {
   margin-right: 4px;
 }
+
+.media-container {
+  padding: 1px;
+  min-width: 300px;
+}
+
+.song {
+  font-family: "Lilex Nerd Font";
+  font-feature-settings: "cv08,zero,cv09,cv10";
+  font-size: 0.9rem;
+  min-width: 300px;
+}
+
+.artist {
+  font-family: "Lilex Nerd Font";
+  font-feature-settings: "cv08,zero,cv09,cv10";
+  font-size: 0.7rem;
+  font-style: italic;
+  min-width: 300px;
+}
+
+tooltip {
+  background-color: #24283b;
+  color: #c0caf5;
+  border: 2px solid #1a1b26;
+}
+
+slider {
+  all: unset;
+}
+
+trough {
+  min-height: 8px;
+  color: #bb9af7;
+  background-color: #414868;
+}
+
+progress {
+  background-color: #bb9af7;
+}
+
