@@ -1,0 +1,29 @@
+#!/usr/bin/env sh
+#|-*- mode:lisp -*-|#
+#|
+exec ros -Q -- $0 "$@"
+|#
+(progn
+  (ros:ensure-asdf)
+  #+quicklisp(ql:quickload '(yason uiop) :silent t))
+
+(defpackage :ros.script.weather
+  (:use :cl))
+(in-package :ros.script.weather)
+
+(defun fetch-geo-location ()
+  (let* ((resp (uiop:run-program '("curl" "-s" "http://ip-api.com/json/") :output 'string))
+         (data (yason:parse resp)))
+    (values (format nil "~,4f" (gethash "lon" data)) (format nil "~,4f" (gethash "lat" data)))))
+
+(defun fetch-weather (lon lat)
+  (handler-case
+      (let* ((url (format nil "https://api.open-meteo.com/v1/forecast?latitude=~a&longitude=~a&current=temperature_2m,relative_humidity_2m,is_day,weather_code,apparent_temperature,wind_speed_10m&timezone=auto&timeformat=unixtime" lat lon))
+             (json-str (uiop:run-program (list "curl" "-s" url) :output 'string)))
+        json-str)))
+
+(defun main (&rest argv)
+  (declare (ignorable argv))
+  (format t "~a~%" (multiple-value-call #'fetch-weather (fetch-geo-location))))
+
+;;; vim: set ft=lisp lisp:

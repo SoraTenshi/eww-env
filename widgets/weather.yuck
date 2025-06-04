@@ -1,0 +1,46 @@
+(defpoll open-meteo :interval "15m" "exec './scripts/weather.ros'")
+; (defpoll wmo-id :interval "15m" {jq(open-meteo, "(.current.weather_code | tostring)", "r")})
+
+(defvar icons
+  `{
+    "0":  { "day": "\\uf00d", "night": "\\uf02e" },
+    "1":  { "day": "\\uf002", "night": "\\uf086" },
+    "2":  { "day": "\\uf002", "night": "\\uf086" },
+    "3":  { "day": "\\uf013", "night": "\\uf031" },
+    "45": { "day": "\\uf014", "night": "\\uf04a" },
+    "48": { "day": "\\uf014", "night": "\\uf04a" },
+    "51": { "day": "\\uf017", "night": "\\uf026" },
+    "53": { "day": "\\uf017", "night": "\\uf026" },
+    "55": { "day": "\\uf017", "night": "\\uf026" },
+    "56": { "day": "\\uf01b", "night": "\\uf02a" },
+    "57": { "day": "\\uf01b", "night": "\\uf02a" },
+    "61": { "day": "\\uf019", "night": "\\uf028" },
+    "63": { "day": "\\uf019", "night": "\\uf028" },
+    "65": { "day": "\\uf019", "night": "\\uf028" },
+    "66": { "day": "\\uf01b", "night": "\\uf02a" },
+    "67": { "day": "\\uf01b", "night": "\\uf02a" },
+    "71": { "day": "\\uf01b", "night": "\\uf02a" },
+    "73": { "day": "\\uf01b", "night": "\\uf02a" },
+    "75": { "day": "\\uf01b", "night": "\\uf02a" },
+    "77": { "day": "\\uf01b", "night": "\\uf02a" },
+    "80": { "day": "\\uf017", "night": "\\uf026" },
+    "81": { "day": "\\uf017", "night": "\\uf026" },
+    "82": { "day": "\\uf017", "night": "\\uf026" },
+    "85": { "day": "\\uf01b", "night": "\\uf02a" },
+    "86": { "day": "\\uf01b", "night": "\\uf02a" },
+    "95": { "day": "\\uf01e", "night": "\\uf02c" },
+    "96": { "day": "\\uf01e", "night": "\\uf02c" },
+    "99": { "day": "\\uf01e", "night": "\\uf02c" }
+  }`)
+
+(defwidget weather []
+  (box :class "weather-container" :orientation "h"
+       :tooltip {
+      "Time of request: ${formattime(open-meteo["current"]["time"], "%R")}
+Temperature: ${open-meteo["current"]["temperature_2m"]}°C
+Feels like: ${open-meteo["current"]["apparent_temperature"]}°C
+Wind speed: ${open-meteo["current"]["wind_speed_10m"] + open-meteo["current_units"]["wind_speed_10m"]}
+Humidity: ${open-meteo["current"]["relative_humidity_2m"]}%"}
+       (label :class "weather-icon"
+              :text {icons[open-meteo["current"]["weather_code"]][open-meteo["current"]["is_day"] == 0 ? "night" : "day"]})
+       (label :class "weather-text" :text "${open-meteo["current"]["temperature_2m"]}°C")))

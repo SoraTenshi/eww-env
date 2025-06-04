@@ -20,7 +20,6 @@
 
 (defwidget media []
   (button :class "media-container"
-       :orientation "h"
        :onclick "playerctl -p spotify play-pause"
        ;; holy what? \n doesn't work here lmao
        :tooltip {replace(full-song, "<nl>", "
