@@ -11,6 +11,8 @@
 
 .clock {
   font-size: 0.8rem;
+  margin-top: 3px;
+  margin-bottom: 3px;
 }
 
 .ampm {
@@ -37,7 +39,6 @@
   font-family: "Lilex Nerd Font";
   font-feature-settings: "cv08,zero,cv09,cv10";
   font-size: 0.9rem;
-  min-width: 300px;
 }
 
 .artist {
@@ -45,8 +46,9 @@
   font-feature-settings: "cv08,zero,cv09,cv10";
   font-size: 0.7rem;
   font-style: italic;
-  min-width: 300px;
 }
+
+.song-progress { }
 
 tooltip {
   background-color: #24283b;
@@ -59,12 +61,12 @@ slider {
 }
 
 trough {
-  min-height: 8px;
-  color: #bb9af7;
+  min-height: 4px;
   background-color: #414868;
 }
 
 progress {
+  min-height: 4px;
   background-color: #bb9af7;
 }
 

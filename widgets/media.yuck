@@ -21,12 +21,11 @@
 (defwidget media []
   (button :class "media-container"
        :orientation "h"
-       :onclick "playerctl play-pause"
-       :vexpand false
+       :onclick "playerctl -p spotify play-pause"
        ;; holy what? \n doesn't work here lmao
        :tooltip {replace(full-song, "<nl>", "
 ")}
-      (box :class "media-inner"
+      (centerbox :class "media-inner"
            :orientation "v"
            (label :class "song"
                   :limit-width 28
