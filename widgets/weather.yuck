@@ -34,7 +34,7 @@
   }`)
 
 (defwidget weather []
-  (box :class "weather-container" :orientation "h"
+  (box :class "weather-container"
        :tooltip {
       "Time of request: ${formattime(open-meteo["current"]["time"], "%R")}
 Temperature: ${open-meteo["current"]["temperature_2m"]}°C

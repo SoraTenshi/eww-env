@@ -1,15 +1,18 @@
 (include "./widgets/clock.yuck")
 (include "./widgets/media.yuck")
 (include "./widgets/weather.yuck")
+(include "./widgets/systray.yuck")
 
 (defwidget parent []
  (centerbox :class "bar" :halign "fill"
-   (box :class "left" :halign "start" :hexpand true :space-evenly true :vexpand false
-        (weather))
-   (box :class "middle" :halign "center" :hexpand true :space-evenly true :vexpand false
+   (box :class "left" :halign "start" :vexpand false
+        )
+   (box :class "middle" :halign "center" :vexpand false
         (media))
-   (box :class "right" :halign "end" :hexpand true :space-evenly true :vexpand false
-        (clock))))
+   (box :class "right" :halign "end" :vexpand false
+        (weather)
+        (clock)
+        (systray-expander))))
 
 (defwindow bar [monitor]
            :monitor { monitor }

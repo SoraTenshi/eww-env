@@ -1,0 +1,13 @@
+(defvar systray-expanded false)
+
+(defwidget systray-expander []
+  (box :class "systray-container" :space-evenly false 
+    (button :class "systray-button"
+            :onclick "${EWW_CMD} update systray-expanded=${!systray-expanded}"
+            {systray-expanded ? "" : ""})
+    (revealer :reveal {systray-expanded} :transition "slideleft"
+      (systray :class "systray-icon"
+               :icon-size 16
+               :space-evenly true
+               :prepend-new true
+               :spacing 6))))
