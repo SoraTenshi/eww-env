@@ -6,7 +6,7 @@
 }
 
 .bar {
-  background-color: rgba(26, 27, 38, 0.7);
+  background-color: rgba(26, 27, 38, 0.5);
   border: 1px solid rgba(65, 72, 104, 0.3);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(65, 72, 104, 0.2);
 }
@@ -50,20 +50,37 @@
   font-style: italic;
 }
 
+.song-progress {
+  min-height: 4px;
+  margin-bottom: 0;
+}
+
 .weather-container {
   min-width: 0;
+  padding: 1px;
 }
 
 .weather-icon {
   font-family: "Weather Icons";
+  margin-right: 4px;
 }
 
-.song-progress { }
+.systray-container {
+}
 
 tooltip {
-  background-color: #24283b;
-  color: #c0caf5;
-  border: 2px solid #1a1b26;
+  background-color: rgba(26, 27, 38, 0.5);
+  border: 1px solid rgba(65, 72, 104, 0.3);
+  border-radius: 0px;
+}
+
+/* Yeah that's for the right click issue... :-D */
+.popup,
+.context-menu,
+window.popup {
+  background-color: rgba(26, 27, 38, 0.9);
+  border: 1px solid rgba(65, 72, 104, 0.6);
+  border-radius: 0px;
 }
 
 slider {

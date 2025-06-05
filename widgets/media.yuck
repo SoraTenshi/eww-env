@@ -14,28 +14,36 @@
 ;;; via playerctl -l
 
 (defwidget music-progress []
+  (box :orientation "h"
+       :vexpand false
+       :valign "start"
   (progress :value song-progress
-            :orientation "h"
-            :class "song-progress"))
+            :class "song-progress")))
+
+(defwidget song-info []
+  (box :orientation "v"
+    (label :class "song"
+           :limit-width 28
+           :unindent true
+           :text song-title
+           :truncate true
+           :wrap false)
+    (label :class "artist"
+           :limit-width 28
+           :unindent true
+           :truncate true
+           :text song-artist
+           :wrap false)))
 
 (defwidget media []
-  (button :class "media-container"
-       :onclick "playerctl -p spotify play-pause"
-       ;; holy what? \n doesn't work here lmao
-       :tooltip {replace(full-song, "<nl>", "
+    (eventbox :class "media-container"
+              :onclick "playerctl -p spotify play-pause"
+              :onscroll "[ '{}' = 'up' ] && playerctl -p spotify next || playerctl -p spotify previous"
+              ;; holy what? \n doesn't work here lmao
+              :tooltip {replace(full-song, "<nl>", "
 ")}
-      (centerbox :class "media-inner"
-           :orientation "v"
-           (label :class "song"
-                  :limit-width 28
-                  :unindent true
-                  :text song-title
-                  :truncate true
-                  :wrap false)
-           (label :class "artist"
-                  :limit-width 28
-                  :unindent true
-                  :truncate true
-                  :text song-artist
-                  :wrap false)
-           (music-progress))))
+          (box :class "media-inner"
+               :orientation "v"
+               :valign "center"
+               (song-info)
+               (music-progress))))

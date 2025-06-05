@@ -4,12 +4,12 @@
 (include "./widgets/systray.yuck")
 
 (defwidget parent []
- (centerbox :class "bar" :halign "fill"
-   (box :class "left" :halign "start" :vexpand false
+ (box :class "bar" :orientation "h"
+   (box :class "left" :halign "start" :vexpand false :space-evenly false
         )
-   (box :class "middle" :halign "center" :vexpand false
+   (box :class "middle" :halign "center" :vexpand false :space-evenly false
         (media))
-   (box :class "right" :halign "end" :vexpand false
+   (box :class "right" :halign "end" :vexpand false :space-evenly false
         (weather)
         (clock)
         (systray-expander))))
