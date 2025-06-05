@@ -18,7 +18,7 @@ exec ros -Q -- $0 "$@"
 
 (defun fetch-weather (lon lat)
   (handler-case
-      (let* ((url (format nil "https://api.open-meteo.com/v1/forecast?latitude=~a&longitude=~a&current=temperature_2m,relative_humidity_2m,is_day,weather_code,apparent_temperature,wind_speed_10m&timezone=auto&timeformat=unixtime" lat lon))
+      (let* ((url (format nil "https://api.open-meteo.com/v1/forecast?latitude=~a&longitude=~a&current=is_day,apparent_temperature,relative_humidity_2m,temperature_2m,precipitation,rain,weather_code,wind_speed_10m,wind_direction_10m,snowfall,showers&timezone=auto&timeformat=unixtime" lat lon))
              (json-str (uiop:run-program (list "curl" "-s" url) :output 'string)))
         json-str)))
 
