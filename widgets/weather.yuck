@@ -117,4 +117,4 @@ Rain: ${open-meteo["current"]["rain"] + open-meteo["current_units"]["rain"]}
 Snowfall: ${open-meteo["current"]["snowfall"] + open-meteo["current_units"]["snowfall"]}"}
        (label :class "weather-icon"
               :text {weather[open-meteo["current"]["weather_code"]][open-meteo["current"]["is_day"] == 0 ? "night" : "day"]})
-       (label :class "weather-text" :text "${open-meteo["current"]["temperature_2m"]}°C")))
+       (label :class "weather-text" :text "${round(open-meteo["current"]["temperature_2m"], 0)}°C")))

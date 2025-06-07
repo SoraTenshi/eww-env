@@ -1,12 +1,13 @@
 (include "./widgets/clock.yuck")
 (include "./widgets/media.yuck")
-(include "./widgets/weather.yuck")
 (include "./widgets/systray.yuck")
+(include "./widgets/weather.yuck")
+(include "./widgets/workspace.yuck")
 
 (defwidget parent []
  (box :class "bar" :orientation "h"
    (box :class "left" :halign "start" :vexpand false :space-evenly false
-        )
+        (workspaces))
    (box :class "middle" :halign "center" :vexpand false :space-evenly false
         (media))
    (box :class "right" :halign "end" :vexpand false :space-evenly false

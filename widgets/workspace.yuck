@@ -1,0 +1,18 @@
+(deflisten ws-data "exec './scripts/hyprland.ros'")
+
+(defwidget workspaces []
+  (box :class "workspaces"
+       :orientation "h"
+       :space-evenly false
+       :spacing 12
+       :halign "center"
+       :valign "center"
+         (for workspace in {ws-data ?: []}
+           (button
+             :class "workspace ${
+               workspace.monitorID > 0 ? "active" :
+               workspace.windows > 0 ? "occupied" : "empty"
+             }"
+             :onclick "hyprctl dispatch workspace ${workspace.id}"
+             :tooltip "Workspace ${workspace.id} (${workspace.windows} windows) [${workspace.urgent}]"
+             ""))))

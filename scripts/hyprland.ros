@@ -29,6 +29,20 @@ exec ros -Q -- $0 "$@"
     (sb-bsd-sockets:socket-connect sock path)
     sock))
 
+(defun char-whitespace-p (string)
+  (member string
+          '(#\Space
+            #\Tab
+            #\Newline
+            #\Return
+            #\Page)
+          :test #'char=))
+
+(defun hypr-json-print ()
+  (let* ((output (uiop:run-program '("hyprctl" "-j" "workspaces") :output :string))
+         (cleaned (remove-if #'char-whitespace-p output)))
+    (format t "~a~%" cleaned)))
+
 (defun watch-workspaces ()
   (let ((sock (hypr-connect-event-socket)))
     (unwind-protect
@@ -41,13 +55,11 @@ exec ros -Q -- $0 "$@"
               while line
               do (when (or (string-prefix-p "workspace>>" line)
                            (string-prefix-p "focusedmon>>" line))
-                       (format t "~a~%"
-                               (uiop:run-program
-                                 '("hyprctl" "-j" "workspaces")
-                                 :output :string)))))
+                       (hypr-json-print))))
       (sb-bsd-sockets:socket-close sock))))
 
 (defun main (&rest argv)
   (declare (ignorable argv))
+  (hypr-json-print)
   (watch-workspaces))
 ;;; vim: set ft=lisp lisp:
