@@ -1,0 +1,53 @@
+#!/usr/bin/env sh
+#|-*- mode:lisp -*-|#
+#|
+exec ros -Q -- $0 "$@"
+|#
+(progn ;;init forms
+  (ros:ensure-asdf)
+  #+quicklisp(ql:quickload '(sb-bsd-sockets uiop) :silent t)
+  )
+
+(defpackage :ros.script.hyprland
+  (:use :cl))
+(in-package :ros.script.hyprland)
+
+(defun string-prefix-p (prefix string)
+  (and (<= (length prefix) (length string))
+       (string= prefix string :end2 (length prefix))))
+
+(defun hypr-event-socket-path ()
+  (let* ((xdg (or (uiop:getenv "XDG_RUNTIME_DIR")
+                  (error "XDG_RUNTIME_DIR not set")))
+         (sig (or (uiop:getenv "HYPRLAND_INSTANCE_SIGNATURE")
+                  (error "HYPRLAND_INSTANCE_SIGNATURE not set"))))
+      (format nil "~a/hypr/~a/.socket2.sock" xdg sig)))
+
+(defun hypr-connect-event-socket ()
+  (let* ((path (namestring (hypr-event-socket-path)))
+         (sock (make-instance 'sb-bsd-sockets:local-socket :type :stream)))
+    (sb-bsd-sockets:socket-connect sock path)
+    sock))
+
+(defun watch-workspaces ()
+  (let ((sock (hypr-connect-event-socket)))
+    (unwind-protect
+      (let ((stream (sb-bsd-sockets:socket-make-stream
+                  sock
+                  :input t
+                  :element-type 'character
+                  :external-format :utf-8)))
+        (loop for line = (read-line stream nil nil)
+              while line
+              do (when (or (string-prefix-p "workspace>>" line)
+                           (string-prefix-p "focusedmon>>" line))
+                       (format t "~a~%"
+                               (uiop:run-program
+                                 '("hyprctl" "-j" "workspaces")
+                                 :output :string)))))
+      (sb-bsd-sockets:socket-close sock))))
+
+(defun main (&rest argv)
+  (declare (ignorable argv))
+  (watch-workspaces))
+;;; vim: set ft=lisp lisp:

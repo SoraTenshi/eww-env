@@ -16,8 +16,10 @@
 (defwidget music-progress []
   (box :orientation "h"
        :vexpand false
+       :hexpand false
        :valign "start"
   (progress :value song-progress
+            :vexpand false
             :class "song-progress")))
 
 (defwidget song-info []
@@ -36,7 +38,8 @@
            :wrap false)))
 
 (defwidget media []
-    (eventbox :class "media-container"
+  (box :class "media-container"
+    (eventbox :class "media-event"
               :onclick "playerctl -p spotify play-pause"
               :onscroll "[ '{}' = 'up' ] && playerctl -p spotify next || playerctl -p spotify previous"
               ;; holy what? \n doesn't work here lmao
@@ -45,5 +48,7 @@
           (box :class "media-inner"
                :orientation "v"
                :valign "center"
+               :space-evenly false
                (song-info)
-               (music-progress))))
+               (music-progress)
+              ))))
