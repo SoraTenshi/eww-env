@@ -5,25 +5,85 @@ exec ros -Q -- $0 "$@"
 |#
 (progn
   (ros:ensure-asdf)
-  #+quicklisp(ql:quickload '(yason uiop) :silent t))
+  #+quicklisp(ql:quickload '(usocket #:com.inuoe.jzon) :silent t))
 
 (defpackage :ros.script.weather
   (:use :cl))
 (in-package :ros.script.weather)
 
-(defun fetch-geo-location ()
-  (let* ((resp (uiop:run-program '("curl" "-s" "http://ip-api.com/json/") :output 'string))
-         (data (yason:parse resp)))
-    (values (format nil "~,4f" (gethash "lon" data)) (format nil "~,4f" (gethash "lat" data)))))
+(defstruct http-response
+  status
+  body)
 
-(defun fetch-weather (lon lat)
+(defun http-get (url)
+  (let* ((slash-pos (position #\/ url))
+         (host (if slash-pos (subseq url 0 slash-pos) url))
+         (path (if slash-pos (subseq url slash-pos) "/"))
+         (socket (usocket:socket-connect host 80))
+         status
+         body)
+    (unwind-protect
+         (let ((stream (usocket:socket-stream socket)))
+           (format stream "GET ~a HTTP/1.0~%Host: ~a~%Connection: close~%~%~%" path host)
+           (finish-output stream)
+           (let* ((status-line (read-line stream nil nil))
+                  (space-pos (and status-line (position #\Space status-line)))
+                  (start (and space-pos
+                              (position-if #'digit-char-p
+                                           status-line
+                                           :start (1+ space-pos))))
+                  (end (and start
+                            (position-if-not #'digit-char-p
+                                             status-line
+                                             :start start))))
+             (when (and start end)
+                   (setf status (parse-integer status-line :start start :end end))))
+           (loop for line = (read-line stream nil nil)
+                 while (and line
+                            (not (zerop
+                                  (length
+                                   (string-trim '(#\Space #\Tab #\Return #\Newline)
+                                                line))))))
+           (setf body
+                 (with-output-to-string (out)
+                   (loop for line = (read-line stream nil nil)
+                         while line do
+                           (princ line out)
+                           (princ #\Newline out)))))
+      (usocket:socket-close socket))
+    (make-http-response :status status :body body)))
+
+(defstruct geo-info
+  lon
+  lat
+  country
+  city)
+
+(defun fetch-geo-location ()
+  (let* ((resp (http-get "ip-api.com/json/"))
+         (data (com.inuoe.jzon:parse (http-response-body resp))))
+      (make-geo-info :lon (format nil "~,4f" (gethash "lon" data))
+                     :lat (format nil "~,4f" (gethash "lat" data))
+                     :country (gethash "country" data)
+                     :city (gethash "city" data))))
+
+;; disgusting ugly hack, but i have no clue how i can do this in a simple way with jzon
+;; also it's just simpler this way. If you wanna complain about, make measurements
+;; and provide a fix that shows, that it's only marginally worse in terms of perf
+(defun add-country-city (geo-data resp)
+  (format nil "{\"country\":\"~a\",\"city\":\"~a\",~a"
+          (geo-info-country geo-data)
+          (geo-info-city geo-data)
+          (subseq resp 1)))
+
+(defun fetch-weather (geo-data)
   (handler-case
-      (let* ((url (format nil "https://api.open-meteo.com/v1/forecast?latitude=~a&longitude=~a&current=is_day,apparent_temperature,relative_humidity_2m,temperature_2m,precipitation,rain,weather_code,wind_speed_10m,wind_direction_10m,snowfall,showers&timezone=auto&timeformat=unixtime" lat lon))
-             (json-str (uiop:run-program (list "curl" "-s" url) :output 'string)))
-        json-str)))
+      (let* ((url (format nil "api.open-meteo.com/v1/forecast?latitude=~a&longitude=~a&current=is_day,apparent_temperature,relative_humidity_2m,temperature_2m,precipitation,rain,weather_code,wind_speed_10m,wind_direction_10m,snowfall,showers&timezone=auto&timeformat=unixtime" (geo-info-lat geo-data) (geo-info-lon geo-data)))
+             (resp (http-get url)))
+           (add-country-city geo-data (http-response-body resp)))))
 
 (defun main (&rest argv)
   (declare (ignorable argv))
-  (format t "~a~%" (multiple-value-call #'fetch-weather (fetch-geo-location))))
+  (format t "~a~%" (fetch-weather (fetch-geo-location))))
 
 ;;; vim: set ft=lisp lisp:
