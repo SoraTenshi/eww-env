@@ -1,0 +1,80 @@
+#!/usr/bin/env sh
+#|-*- mode:lisp -*-|#
+#|
+exec ros -Q -- $0 "$@"
+|#
+(progn ;;init forms
+  (ros:ensure-asdf)
+  #+quicklisp(ql:quickload '(uiop) :silent t)
+  )
+
+(defpackage :ros.script.runcat
+  (:use :cl))
+(in-package :ros.script.runcat)
+
+;; -------- State definitions start ---------- ;;
+(defconstant +MIN-CYCLES+ 100)
+(defconstant +MAX-FACTOR+ 1.0)
+
+(defparameter *cpu-load* 0)
+(defparameter *current-cat* 0)
+(defparameter *target-delay-ms* +MIN-CYCLES+)
+(defparameter *old-delay-ms* +MIN-CYCLES+)
+(defparameter *last-cpu-update-time* (get-internal-real-time))
+(defparameter *factor* 0.0)
+
+(defconstant +CPU-UPDATE-INTERVAL-MS+ 2000)
+(defconstant +CAT-FRAMES+ 5)
+;; -------- State definitions end ---------- ;;
+
+(defun lerp (v0 v1 alpha)
+  (+ v0 (* alpha (- v1 v0))))
+
+(defun get-cpu-usage ()
+  (handler-case
+    (let* ((res (uiop:run-program '("sh" "-c" "top -bn1 | grep '%Cpu' | tail -1 | awk '{print 100-$8}'")
+                                  :output :string
+                                  :error-output :string))
+           ;; data loss, but who cares?
+           (cpu-usage (parse-integer (string-trim '(#\Space #\Newline #\Return #\Tab) res) :junk-allowed t)))
+      (if (null cpu-usage) 0 cpu-usage))
+  (error (e)
+         (format *error-output* "Error getting CPU usage: ~a~%" e)
+         0)))
+
+(defun update-cpu-metrics ()
+  (setf *cpu-load* (get-cpu-usage))
+  (setf *target-delay-ms*
+        (round (/ 1000.0 (if (zerop *cpu-load*) 0.2 (/ *cpu-load* 5.0)))))
+  (setf *old-delay-ms* *target-delay-ms*)
+  (setf *factor* 0.0)
+  (setf *last-cpu-update-time* (get-internal-real-time)))
+
+(defun update-anim-state ()
+  (setf *current-cat* (mod (+ *current-cat* 1) +CAT-FRAMES+))
+  (if (>= *factor* +MAX-FACTOR+)
+      (setf *old-delay-ms* *target-delay-ms*)
+      (progn
+        (incf *factor* 0.01)
+        (setf *old-delay-ms*
+              (round (lerp *old-delay-ms* *target-delay-ms* *factor*))))))
+
+(defun print-new-cat ()
+  (let ((current-frame-delay-ms (round *old-delay-ms*)))
+    (format t "{\"select\":~a}~%" *current-cat*)
+    (finish-output)
+    (sleep (/ current-frame-delay-ms 1000.0))))
+
+(defun main (&rest argv)
+  (declare (ignorable argv))
+  (loop
+    (let* ((current-real-time (get-internal-real-time))
+           (elapsed-time-ms (/ (- current-real-time *last-cpu-update-time*)
+                               (/ (coerce internal-time-units-per-second 'double-float) 1000.0))))
+      (when (>= elapsed-time-ms +CPU-UPDATE-INTERVAL-MS+)
+            (update-cpu-metrics))
+
+      (print-new-cat)
+      (update-anim-state)))
+  )
+;;; vim: set ft=lisp lisp:

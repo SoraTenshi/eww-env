@@ -1,5 +1,6 @@
 (include "./widgets/clock.yuck")
 (include "./widgets/media.yuck")
+(include "./widgets/runcat.yuck")
 (include "./widgets/systray.yuck")
 (include "./widgets/weather.yuck")
 (include "./widgets/workspace.yuck")
@@ -11,6 +12,7 @@
    (box :class "middle" :halign "center" :vexpand false :space-evenly false
         (media))
    (box :class "right" :halign "end" :vexpand false :space-evenly false
+        (runcat)
         (weather)
         (clock)
         (systray-expander))))

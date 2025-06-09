@@ -151,16 +151,34 @@ $border-light: #414868;
   }
 }
 
+.runcat-container {
+  margin-right: 4px;
+}
+
+.runcats { }
+
 tooltip {
   background-color: rgba($bg-sec, 0.5);
   border: 1px solid rgba($border-light, 0.3);
   border-radius: 0px;
 }
 
-window.popup {
-  background-color: rgba($bg-sec, 0.9);
+menu {
+  padding: 0;
+  background-color: rgba($bg-sec, 0.6);
+  color: $accent-purple;
   border: 1px solid rgba($border-light, 0.6);
   border-radius: 0px;
+
+  menuitem {
+    border-radius: 0;
+    background-color: $bg-sec;
+  }
+
+  menuitem:hover {
+    color: $bg-sec;
+    background-color: $accent-blue;
+  }
 }
 
 slider {
