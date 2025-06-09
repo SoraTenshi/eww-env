@@ -107,7 +107,8 @@
        :halign "end"
        :space-evenly false
        :tooltip {
-      "Time of request: ${formattime(open-meteo["current"]["time"], "%R")}
+      "Location: ${open-meteo["country"]}, ${open-meteo["city"]}
+Time of request: ${formattime(open-meteo["current"]["time"], "%R")}
 Temperature: ${open-meteo["current"]["temperature_2m"]}°C
 Feels like: ${open-meteo["current"]["apparent_temperature"]}°C
 Wind speed: ${open-meteo["current"]["wind_speed_10m"] + open-meteo["current_units"]["wind_speed_10m"]} in ${open-meteo["current"]["wind_direction_10m"] + open-meteo["current_units"]["wind_direction_10m"]}
