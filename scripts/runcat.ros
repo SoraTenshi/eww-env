@@ -13,7 +13,8 @@ exec ros -Q -- $0 "$@"
 (in-package :ros.script.runcat)
 
 ;; -------- State definitions start ---------- ;;
-(defconstant +MIN-CYCLES+ 100)
+(defconstant +MIN-CYCLES+ 10)
+(defconstant +MAX-CYCLES+ 200)
 (defconstant +MAX-FACTOR+ 1.0)
 
 (defparameter *cpu-load* 0)
@@ -23,30 +24,42 @@ exec ros -Q -- $0 "$@"
 (defparameter *last-cpu-update-time* (get-internal-real-time))
 (defparameter *factor* 0.0)
 
+(defparameter *prev-total-time* 0.0)
+(defparameter *prev-idle-time* 0.0)
+
 (defconstant +CPU-UPDATE-INTERVAL-MS+ 2000)
 (defconstant +CAT-FRAMES+ 5)
+(defconstant +TIME-UNITS-PER-MS+ (/ (coerce internal-time-units-per-second 'double-float) 1000.0))
 ;; -------- State definitions end ---------- ;;
 
 (defun lerp (v0 v1 alpha)
   (+ v0 (* alpha (- v1 v0))))
 
+(defun read-cpu-total-idle ()
+  (with-open-file (s "/proc/stat" :direction :input)
+                  (let* ((line (read-line s nil))
+                         (raw (uiop:split-string line :separator " "))
+                         (fields (remove "" raw :test #'string=))
+                         (nums (mapcar #'parse-integer (cdr fields))))
+                    (let* ((idle (+ (nth 3 nums) (nth 4 nums)))
+                           (total (reduce #'+ nums)))
+                      (values idle total)))))
+
 (defun get-cpu-usage ()
-  (handler-case
-    (let* ((res (uiop:run-program '("sh" "-c" "top -bn1 | grep '%Cpu' | tail -1 | awk '{print 100-$8}'")
-                                  :output :string
-                                  :error-output :string))
-           ;; data loss, but who cares?
-           (cpu-usage (parse-integer (string-trim '(#\Space #\Newline #\Return #\Tab) res) :junk-allowed t)))
-      (if (null cpu-usage) 0 cpu-usage))
-  (error (e)
-         (format *error-output* "Error getting CPU usage: ~a~%" e)
-         0)))
+  (multiple-value-bind (idle total) (read-cpu-total-idle)
+  (let* ((d-total (- total *prev-total-time*))
+         (d-idle (- idle *prev-idle-time*))
+         (usage (if (zerop d-total) 0
+                    (* 100 (- 1 (/ d-idle d-total))))))
+      (setf *prev-total-time* total)
+      (setf *prev-idle-time* idle)
+    usage)))
 
 (defun update-cpu-metrics ()
-  (setf *cpu-load* (get-cpu-usage))
-  (setf *target-delay-ms*
-        (round (/ 1000.0 (if (zerop *cpu-load*) 0.2 (/ *cpu-load* 5.0)))))
-  (setf *old-delay-ms* *target-delay-ms*)
+  (let* ((load (float (max 0 (min 100 *cpu-load*))))
+         (span (- +MAX-CYCLES+ +MIN-CYCLES+))
+         (delay (+ +MIN-CYCLES+ (* span (- 1 (/ load 100.0))))))
+    (setf *target-delay-ms* (round delay)))
   (setf *factor* 0.0)
   (setf *last-cpu-update-time* (get-internal-real-time)))
 
@@ -59,22 +72,38 @@ exec ros -Q -- $0 "$@"
         (setf *old-delay-ms*
               (round (lerp *old-delay-ms* *target-delay-ms* *factor*))))))
 
-(defun print-new-cat ()
-  (let ((current-frame-delay-ms (round *old-delay-ms*)))
-    (format t "{\"select\":~a}~%" *current-cat*)
-    (finish-output)
-    (sleep (/ current-frame-delay-ms 1000.0))))
+(sb-thread:make-thread
+  (lambda ()
+          (loop
+            (setf *cpu-load* (get-cpu-usage))
+            (let* ((span (- +MAX-CYCLES+ +MIN-CYCLES+))
+                   (delay (+ +MIN-CYCLES+
+                             (* span (- 1 (/ (float *cpu-load*) 100.0))))))
+              (setf *frame-delay-ms* (round delay)))
+            (sleep (/ (float +CPU-UPDATE-INTERVAL-MS+) 1000.0))))
+  :name "cpu-load-poll")
 
+; (defparameter *debug* *cpu-load*)
 (defun main (&rest argv)
   (declare (ignorable argv))
+  (let ((frame 0))
   (loop
     (let* ((current-real-time (get-internal-real-time))
            (elapsed-time-ms (/ (- current-real-time *last-cpu-update-time*)
-                               (/ (coerce internal-time-units-per-second 'double-float) 1000.0))))
+                               +TIME-UNITS-PER-MS+)))
       (when (>= elapsed-time-ms +CPU-UPDATE-INTERVAL-MS+)
             (update-cpu-metrics))
 
-      (print-new-cat)
-      (update-anim-state)))
+      ; (if (/= *cpu-load* *debug*)
+      ;     (progn
+      ;       (format t "~,4f%~%" *cpu-load*)
+      ;       (setf *debug* *cpu-load*)))
+      (format t "{\"select\":~d}~%" frame)
+      (finish-output)
+      (setf frame (mod (1+ frame) +CAT-FRAMES+))
+      (update-anim-state)
+      (sb-thread:thread-yield)
+      ; (format t "Cycle time: ~,4f~%" (/ *frame-delay-ms* 1000.0))
+      (sleep (/ *frame-delay-ms* 1000.0)))))
   )
 ;;; vim: set ft=lisp lisp:

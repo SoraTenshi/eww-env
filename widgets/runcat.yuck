@@ -6,7 +6,7 @@
     (stack :selected {cpu-switcher["select"]}
            :class "runcats"
            :same-size true
-           :transition: false
+           :transition false
       (image :fill-svg "#a9b1d6" :image-width 42 :path "${EWW_CONFIG_DIR}/assets/runcat/cat_0-symbolic.svg")
       (image :fill-svg "#a9b1d6" :image-width 42 :path "${EWW_CONFIG_DIR}/assets/runcat/cat_1-symbolic.svg")
       (image :fill-svg "#a9b1d6" :image-width 42 :path "${EWW_CONFIG_DIR}/assets/runcat/cat_2-symbolic.svg")
