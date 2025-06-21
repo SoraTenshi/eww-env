@@ -3,55 +3,52 @@
 #|
 exec ros -Q -- $0 "$@"
 |#
-(progn
+(progn ;;init forms
   (ros:ensure-asdf)
   #+quicklisp(ql:quickload '(usocket #:com.inuoe.jzon) :silent t))
 
-(defpackage :ros.script.weather
+(defpackage :ros.script.new-weather
   (:use :cl))
-(in-package :ros.script.weather)
+(in-package :ros.script.new-weather)
+
+(defun cut-protocol (url)
+  (let ((pos (search "://" url :test #'char=)))
+    (if pos
+        (subseq url (+ pos 3))
+        url)))
 
 (defstruct http-response
   status
   body)
 
+(defun parse-status (header)
+  (let ((parts (uiop:split-string header :separator " ")))
+    (parse-integer (second parts))))
+
 (defun http-get (url)
-  (let* ((slash-pos (position #\/ url))
-         (host (if slash-pos (subseq url 0 slash-pos) url))
-         (path (if slash-pos (subseq url slash-pos) "/"))
+  (let* ((loc (cut-protocol url))
+         (slash-pos (position #\/ loc))
+         (host (if slash-pos (subseq loc 0 slash-pos) loc)) ;; cut off ip
+         (path (if slash-pos (subseq loc slash-pos) "/")) ;; cut off until /
          (socket (usocket:socket-connect host 80))
          status
          body)
     (unwind-protect
-         (let ((stream (usocket:socket-stream socket)))
-           (format stream "GET ~a HTTP/1.0~%Host: ~a~%Connection: close~%~%~%" path host)
-           (finish-output stream)
-           (let* ((status-line (read-line stream nil nil))
-                  (space-pos (and status-line (position #\Space status-line)))
-                  (start (and space-pos
-                              (position-if #'digit-char-p
-                                           status-line
-                                           :start (1+ space-pos))))
-                  (end (and start
-                            (position-if-not #'digit-char-p
-                                             status-line
-                                             :start start))))
-             (when (and start end)
-                   (setf status (parse-integer status-line :start start :end end))))
-           (loop for line = (read-line stream nil nil)
-                 while (and line
-                            (not (zerop
-                                  (length
-                                   (string-trim '(#\Space #\Tab #\Return #\Newline)
-                                                line))))))
-           (setf body
-                 (with-output-to-string (out)
-                   (loop for line = (read-line stream nil nil)
-                         while line do
-                           (princ line out)
-                           (princ #\Newline out)))))
-      (usocket:socket-close socket))
-    (make-http-response :status status :body body)))
+      (let ((stream (usocket:socket-stream socket))
+            (fmt (format nil "GET ~a HTTP/1.0~%Host: ~a~%Connection: close~%~%~%" path host)))
+        (format stream "~a" fmt)
+        (finish-output stream)
+        (setf status (parse-status (read-line stream)))
+        ;; read until body
+        (loop for line = (read-line stream)
+              until (and line (string= (string-trim '(#\Space #\Tab #\Return #\Newline) line) "")))
+        (setf body
+              (with-output-to-string (b)
+                (loop for line = (read-line stream nil nil)
+                      while line
+                      do (format b "~a~%" line)))))
+    (when socket (usocket:socket-close socket)))
+  (make-http-response :status status :body body)))
 
 (defstruct geo-info
   lon
@@ -60,12 +57,12 @@ exec ros -Q -- $0 "$@"
   city)
 
 (defun fetch-geo-location ()
-  (let* ((resp (http-get "ip-api.com/json/"))
+  (let* ((resp (http-get "http://ip-api.com/json/"))
          (data (com.inuoe.jzon:parse (http-response-body resp))))
-      (make-geo-info :lon (format nil "~,4f" (gethash "lon" data))
-                     :lat (format nil "~,4f" (gethash "lat" data))
-                     :country (gethash "country" data)
-                     :city (gethash "city" data))))
+    (make-geo-info :lon (format nil "~,4f" (gethash "lon" data))
+                   :lat (format nil "~,4f" (gethash "lat" data))
+                   :country (gethash "country" data)
+                   :city (gethash "city" data))))
 
 ;; disgusting ugly hack, but i have no clue how i can do this in a simple way with jzon
 ;; also it's just simpler this way. If you wanna complain about, make measurements
@@ -77,13 +74,11 @@ exec ros -Q -- $0 "$@"
           (subseq resp 1)))
 
 (defun fetch-weather (geo-data)
-  (handler-case
-      (let* ((url (format nil "api.open-meteo.com/v1/forecast?latitude=~a&longitude=~a&current=is_day,apparent_temperature,relative_humidity_2m,temperature_2m,precipitation,rain,weather_code,wind_speed_10m,wind_direction_10m,snowfall,showers&timezone=auto&timeformat=unixtime" (geo-info-lat geo-data) (geo-info-lon geo-data)))
-             (resp (http-get url)))
-           (add-country-city geo-data (http-response-body resp)))))
+  (let* ((url (format nil "http://api.open-meteo.com/v1/forecast?latitude=~a&longitude=~a&current=is_day,apparent_temperature,relative_humidity_2m,temperature_2m,precipitation,rain,weather_code,wind_speed_10m,wind_direction_10m,snowfall,showers&timezone=auto&timeformat=unixtime" (geo-info-lat geo-data) (geo-info-lon geo-data)))
+         (resp (http-get url)))
+       (add-country-city geo-data (http-response-body resp))))
 
 (defun main (&rest argv)
   (declare (ignorable argv))
   (format t "~a~%" (fetch-weather (fetch-geo-location))))
 
-;;; vim: set ft=lisp lisp:
